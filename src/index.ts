@@ -1,16 +1,11 @@
 import { Hono } from 'hono'
-import { type Context } from 'hono';
-import { getPrisma } from './lib/prisma';
 import { Bindings } from './types/bindings';
+import { v1Router } from './routes/v1';
 
 const app = new Hono<{
   Bindings: Bindings;
 }>()
 
-app.get('/', async (c: Context) => {
-  const prisma = getPrisma(c.env.DATABASE_URL);
-  const users = await prisma.user.findMany();
-  return c.json(users);
-})
+app.route("api/v1", v1Router);
 
 export default app

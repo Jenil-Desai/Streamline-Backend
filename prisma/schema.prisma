@@ -17,6 +17,8 @@ model User {
   last_name  String?
   watchTime  Int         @default(0)
   bio        String?
+  country    String?
+  on_boarded Boolean     @default(false)
   created_at DateTime    @default(now())
   Watchlist  Watchlist[]
 }

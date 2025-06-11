@@ -15,8 +15,10 @@
     "@prisma/adapter-neon": "^6.9.0",
     "@prisma/client": "^6.9.0",
     "dotenv-cli": "^8.0.0",
+    "hashless": "^1.0.12",
     "hono": "^4.7.11",
-    "prisma": "^6.9.0"
+    "prisma": "^6.9.0",
+    "zod": "^3.25.61"
   },
   "devDependencies": {
     "wrangler": "^4.4.0"
