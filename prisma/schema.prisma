@@ -1,0 +1,53 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  password   String
+  first_name String?
+  last_name  String?
+  watchTime  Int         @default(0)
+  bio        String?
+  created_at DateTime    @default(now())
+  Watchlist  Watchlist[]
+}
+
+model Watchlist {
+  id            String          @id @default(uuid())
+  name          String
+  ownerId       String
+  owner         User            @relation(fields: [ownerId], references: [id])
+  createdAt     DateTime        @default(now())
+  WatchlistItem WatchlistItem[]
+}
+
+model WatchlistItem {
+  id          String      @id @default(uuid())
+  tmdbId      Int         @unique
+  scheduledAt DateTime?
+  mediaType   MediaType
+  status      WatchStatus @default(PLANNED)
+  watchlistId String
+  watchlist   Watchlist   @relation(fields: [watchlistId], references: [id])
+  createdAt   DateTime    @default(now())
+}
+
+enum MediaType {
+  MOVIE
+  TV
+}
+
+enum WatchStatus {
+  PLANNED
+  WATCHED
+  IN_PROGRESS
+}

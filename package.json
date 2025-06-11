@@ -3,10 +3,20 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy --minify",
-    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings",
+    "db:generate": "npm run env prisma generate",
+    "db:migrate:deploy": "npm run env prisma migrate deploy",
+    "db:migrate:dev": "npm run env prisma migrate dev",
+    "db:seed": "npm run env prisma db seed",
+    "env": "dotenv -e ./.dev.vars --",
+    "prisma": "npm run env prisma"
   },
   "dependencies": {
-    "hono": "^4.7.11"
+    "@prisma/adapter-neon": "^6.9.0",
+    "@prisma/client": "^6.9.0",
+    "dotenv-cli": "^8.0.0",
+    "hono": "^4.7.11",
+    "prisma": "^6.9.0"
   },
   "devDependencies": {
     "wrangler": "^4.4.0"
