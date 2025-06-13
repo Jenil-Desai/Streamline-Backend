@@ -7,3 +7,6 @@ export * from './tmdb/helpers';
 
 // Export cache utilities
 export * from './cache';
+
+// Export watchlist helpers
+export * from './watchlist/helpers';
