@@ -10,17 +10,19 @@ datasource db {
 }
 
 model User {
-  id         String      @id @default(uuid())
-  email      String      @unique
-  password   String
-  first_name String?
-  last_name  String?
-  watchTime  Int         @default(0)
-  bio        String?
-  country    String?
-  on_boarded Boolean     @default(false)
-  created_at DateTime    @default(now())
-  Watchlist  Watchlist[]
+  id             String      @id @default(uuid())
+  email          String      @unique
+  password       String
+  first_name     String?
+  last_name      String?
+  watchTime      Int         @default(0)
+  movies_watched Int         @default(0)
+  shows_watched  Int         @default(0)
+  bio            String?
+  country        String?
+  on_boarded     Boolean     @default(false)
+  created_at     DateTime    @default(now())
+  Watchlist      Watchlist[]
 }
 
 model Watchlist {

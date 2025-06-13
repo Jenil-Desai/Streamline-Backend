@@ -9,7 +9,15 @@ export const verifyToken = createMiddleware(async (c: Context, next: Next) => {
     return c.json({ error: "unauthorized" });
   }
 
-  const payload = await verify(token, c.env.JWT_SECRET);
+  const match = token.match(/^Bearer\s+(.+)$/);
+  if (!match) {
+    c.status(403);
+    return c.json({ error: "Invalid Token Format" });
+  }
+
+  const tokenValue = match[1];
+
+  const payload = await verify(tokenValue, c.env.JWT_SECRET);
   if (!payload.id) {
     c.status(403);
     return c.json({ error: "Invalid User" });

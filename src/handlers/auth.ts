@@ -29,7 +29,7 @@ export const registerUser = factory.createHandlers(async (c: Context) => {
     }
 
     const hashedPassword = await hash(password);
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         first_name,
         last_name,
@@ -38,20 +38,26 @@ export const registerUser = factory.createHandlers(async (c: Context) => {
       },
     });
 
-    return c.json({ success: true }, 200);
+    const token = await sign({ id: user.id, onboarded: user.on_boarded, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7 }, c.env.JWT_SECRET);
+    return c.json({ success: true, token }, 200);
   } catch (error) {
     return c.json({ success: false, error: "Internal server error" }, 500);
   }
 })
 
 export const onBoardUser = factory.createHandlers(async (c: Context) => {
+  const user_id = c.get("userId");
+  if (!user_id) {
+    return c.json({ success: false, error: "unauthorized" }, 403);
+  }
+
   const body = await c.req.json<OnboardSchema>();
   const validatedBody = onboardSchema.safeParse(body);
   if (!validatedBody.success) {
     return c.json({ success: false, error: "Invalid input", details: validatedBody.error.errors }, 400);
   }
 
-  const { user_id, bio, country } = validatedBody.data;
+  const { bio, country } = validatedBody.data;
   const prisma = getPrisma(c.env.DATABASE_URL);
 
   try {
@@ -60,6 +66,7 @@ export const onBoardUser = factory.createHandlers(async (c: Context) => {
       data: {
         bio,
         country,
+        on_boarded: true,
       },
     });
 

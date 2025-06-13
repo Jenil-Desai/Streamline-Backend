@@ -6,5 +6,5 @@ import { verifyToken } from "../../../middlewares/verifyToken";
 export const authRouter = new Hono<{ Bindings: Bindings }>();
 
 authRouter.post("/register", ...registerUser);
-authRouter.post("/onboard", ...onBoardUser);
+authRouter.post("/onboard", verifyToken, ...onBoardUser);
 authRouter.post("/login", ...loginUser);
