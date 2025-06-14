@@ -5,8 +5,173 @@ import {
   fetchTMDBData,
   DEFAULT_CACHE_DURATION,
   getFromCache,
-  storeInCache
+  storeInCache,
+  mapMovieToMediaItem,
+  mapTVToMediaItem
 } from "../utils";
+import { MediaItem, TMDBMovieItem, TMDBTVItem } from "../types";
+
+// Types for search results
+interface SearchResponse {
+  page: number;
+  total_pages: number;
+  total_results: number;
+  results: MediaItem[];
+}
+
+interface TMDBMultiSearchResult {
+  id: number;
+  media_type: 'movie' | 'tv' | 'person';
+  title?: string;
+  name?: string;
+  original_title?: string;
+  original_name?: string;
+  poster_path: string | null;
+  profile_path?: string | null;
+  release_date?: string;
+  first_air_date?: string;
+}
+
+interface TMDBMultiSearchResponse {
+  page: number;
+  total_pages: number;
+  total_results: number;
+  results: TMDBMultiSearchResult[];
+}
+
+/**
+ * Multi search handler - searches for both movies and TV shows
+ * Supports debounce on the frontend by accepting a query parameter
+ */
+export const multiSearchHandler = async (c: Context<{ Bindings: Bindings }>) => {
+  // Extract query parameters
+  const query = c.req.query('query');
+  const page = parseInt(c.req.query('page') || '1', 10);
+  const includeAdult = c.req.query('include_adult') === 'true';
+  const language = c.req.query('language') || 'en-US';
+  const mediaType = c.req.query('media_type'); // Optional filter: 'movie', 'tv', or undefined for both
+
+  // Validate required parameters
+  if (!query || query.trim().length === 0) {
+    return c.json(
+      { success: false, error: "Search query is required" },
+      400
+    );
+  }
+
+  // Check cache first
+  // Include all parameters in the cache key to ensure correct caching
+  const cacheKey = `search_${query}_${page}_${includeAdult}_${language}_${mediaType || 'all'}`;
+  const cachedData = await getFromCache<SearchResponse>(c.env.SL_CACHE, cacheKey);
+
+  if (cachedData) {
+    return c.json({ success: true, data: cachedData });
+  }
+
+  // Cache miss - fetch from TMDB API
+  const apiKey = c.env.TMDB_API_KEY;
+  const options = getTMDBOptions(apiKey);
+
+  try {
+    let endpoint;
+    let results: MediaItem[] = [];
+
+    // If mediaType is specified, use the specific endpoint
+    if (mediaType === 'movie') {
+      endpoint = `https://api.themoviedb.org/3/search/movie?query=${encodeURIComponent(query)}&include_adult=${includeAdult}&language=${language}&page=${page}`;
+      const response = await fetchTMDBData<{ results: TMDBMovieItem[] } & { page: number, total_pages: number, total_results: number }>(endpoint, options);
+
+      if (response) {
+        results = response.results.map(item => mapMovieToMediaItem(item));
+
+        const searchResponse: SearchResponse = {
+          page: response.page,
+          total_pages: response.total_pages,
+          total_results: response.total_results,
+          results
+        };
+
+        // Cache the response
+        await storeInCache(c.env.SL_CACHE, cacheKey, searchResponse, DEFAULT_CACHE_DURATION);
+
+        return c.json({ success: true, data: searchResponse });
+      }
+    } else if (mediaType === 'tv') {
+      endpoint = `https://api.themoviedb.org/3/search/tv?query=${encodeURIComponent(query)}&include_adult=${includeAdult}&language=${language}&page=${page}`;
+      const response = await fetchTMDBData<{ results: TMDBTVItem[] } & { page: number, total_pages: number, total_results: number }>(endpoint, options);
+
+      if (response) {
+        results = response.results.map(item => mapTVToMediaItem(item));
+
+        const searchResponse: SearchResponse = {
+          page: response.page,
+          total_pages: response.total_pages,
+          total_results: response.total_results,
+          results
+        };
+
+        // Cache the response
+        await storeInCache(c.env.SL_CACHE, cacheKey, searchResponse, DEFAULT_CACHE_DURATION);
+
+        return c.json({ success: true, data: searchResponse });
+      }
+    } else {
+      // Use multi search to get both movies and TV shows
+      endpoint = `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&include_adult=${includeAdult}&language=${language}&page=${page}`;
+      const response = await fetchTMDBData<TMDBMultiSearchResponse>(endpoint, options);
+
+      if (response) {
+        // Filter out results that are not movies or TV shows
+        results = response.results
+          .filter(item => item.media_type === 'movie' || item.media_type === 'tv')
+          .map(item => {
+            if (item.media_type === 'movie') {
+              return {
+                id: item.id,
+                title: item.title || item.original_title || '',
+                poster_path: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+                release_date: item.release_date || '',
+                media_type: 'movie' as const
+              };
+            } else {
+              return {
+                id: item.id,
+                title: item.name || item.original_name || '',
+                poster_path: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null,
+                release_date: item.first_air_date || '',
+                media_type: 'tv' as const
+              };
+            }
+          });
+
+        const searchResponse: SearchResponse = {
+          page: response.page,
+          total_pages: response.total_pages,
+          total_results: response.total_results,
+          results
+        };
+
+        // Cache the response
+        await storeInCache(c.env.SL_CACHE, cacheKey, searchResponse, DEFAULT_CACHE_DURATION);
+
+        return c.json({ success: true, data: searchResponse });
+      }
+    }
+
+    // If we get here, something went wrong with the API call
+    return c.json(
+      { success: false, error: "Failed to fetch search results" },
+      500
+    );
+
+  } catch (error) {
+    console.error("Error in multi search:", error);
+    return c.json(
+      { success: false, error: "An error occurred while searching" },
+      500
+    );
+  }
+};
 
 // Types for movie details
 interface TMDBMovieDetails {
