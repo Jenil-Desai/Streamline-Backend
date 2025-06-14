@@ -1,23 +1,14 @@
 import { Hono } from "hono";
 import { Bindings } from "../../../types";
+import {
+  movieDetailsHandler,
+  tvDetailsHandler
+} from "../../../handlers/search";
 
 export const searchRouter = new Hono<{ Bindings: Bindings }>();
 
-// Define search routes here
-// Example:
-// searchRouter.get('/', async (c) => {
-//   const query = c.req.query('q');
-//   // Search implementation
-//   return c.json({ results: [], query });
-// });
-// 
-// searchRouter.get('/filters', async (c) => {
-//   // Get search filters implementation
-//   return c.json({ filters: [] });
-// });
-// 
-// searchRouter.get('/suggestions', async (c) => {
-//   const input = c.req.query('input');
-//   // Get search suggestions implementation
-//   return c.json({ suggestions: [] });
-// });
+// Movie details route - returns all information about a specific movie
+searchRouter.get('/movie/:tmdbId', movieDetailsHandler);
+
+// TV show details route - returns all information about a specific TV show including seasons and episodes
+searchRouter.get('/tv/:tmdbId', tvDetailsHandler);
