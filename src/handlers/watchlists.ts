@@ -11,7 +11,6 @@ import { MediaItem } from "../types";
 import {
   getWatchlistItemsCacheKey,
   getUserWatchlistsCacheKey,
-  getWatchlistCacheKey,
   invalidateWatchlistCaches,
   getMediaDetailsWithCache
 } from "../utils/watchlist/helpers";
@@ -41,6 +40,9 @@ export const getUserWatchlistsHandler = factory.createHandlers(async (c: Context
       orderBy: {
         createdAt: "desc",
       },
+      include: {
+        WatchlistItem: true,
+      }
     });
 
     // Store in cache for future requests
