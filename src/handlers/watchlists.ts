@@ -75,10 +75,18 @@ export const createWatchlistHandler = factory.createHandlers(async (c: Context) 
       );
     }
 
+    if (!body.emoji || typeof body.emoji !== "string") {
+      return c.json(
+        { success: false, error: "Watchlist emoji is required" },
+        400
+      );
+    }
+
     const prisma = getPrisma(c.env.DATABASE_URL);
     const watchlist = await prisma.watchlist.create({
       data: {
         name: body.name,
+        emoji: body.emoji,
         ownerId: userId,
       },
     });
@@ -375,6 +383,7 @@ export const addWatchlistItemHandler = factory.createHandlers(async (c: Context)
         tmdbId: body.tmdbId,
         mediaType: body.mediaType as MediaType,
         status: (body.status as WatchStatus) || "PLANNED",
+        note: body.note,
         scheduledAt: body.scheduledAt ? new Date(body.scheduledAt) : null,
         watchlistId,
       },

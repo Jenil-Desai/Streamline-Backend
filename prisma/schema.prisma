@@ -28,6 +28,7 @@ model User {
 model Watchlist {
   id            String          @id @default(uuid())
   name          String
+  emoji         String          @default("🔖")
   ownerId       String
   owner         User            @relation(fields: [ownerId], references: [id])
   createdAt     DateTime        @default(now())
@@ -40,6 +41,7 @@ model WatchlistItem {
   scheduledAt DateTime?
   mediaType   MediaType
   status      WatchStatus @default(PLANNED)
+  note        String?
   watchlistId String
   watchlist   Watchlist   @relation(fields: [watchlistId], references: [id])
   createdAt   DateTime    @default(now())
@@ -54,4 +56,5 @@ enum WatchStatus {
   PLANNED
   WATCHED
   IN_PROGRESS
+  DROPPED
 }
